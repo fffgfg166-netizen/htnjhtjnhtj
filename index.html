@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مِداد الذِّكر | الموسوعة الإسلامية الشاملة</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: {
+                            950: '#0B2F25',
+                            900: '#0F4C3A',
+                            800: '#14634D',
+                            700: '#1A7A60',
+                        },
+                        gold: {
+                            500: '#D4AF37',
+                            600: '#AA8B2C',
+                        },
+                        ivory: '#FDFBF7'
+                    },
+                    fontFamily: {
+                        sans: ['Tajawal', 'sans-serif'],
+                        quran: ['Amiri', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Tajawal', sans-serif; background-color: #FDFBF7; }
+        .quran-text { font-family: 'Amiri', serif; }
+    </style>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBp7gZ7bbabIGrokehXeZH9OaNqs6-tEZY",
+            authDomain: "medad-ezikr.firebaseapp.com",
+            projectId: "medad-ezikr",
+            storageBucket: "medad-ezikr.firebasestorage.app",
+            messagingSenderId: "235096064459",
+            appId: "1:235096064459:web:2e6bae4c2e8c604f14b64e",
+            measurementId: "G-1L6L0X1RXX"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        if (!localStorage.getItem('visitor_secret_id')) {
+            localStorage.setItem('visitor_secret_id', 'user_' + Math.random().toString(36).substr(2, 9) + Date.now());
+        }
+        window.visitorSecretId = localStorage.getItem('visitor_secret_id');
+
+        window.submitQuestion = async function() {
+            const input = document.getElementById('user-question-input');
+            const questionText = input.value.trim();
+            if(!questionText) return alert("من فضلك اكتب سؤالك أولاً!");
+
+            try {
+                await addDoc(collection(db, "questions"), {
+                    eraIndex: window.currentEraIndex,
+                    question: questionText,
+                    reply: null,
+                    timestamp: Date.now(),
+                    userId: window.visitorSecretId
+                });
+                input.value = '';
+            } catch (error) {
+                console.error("خطأ أثناء إرسال السؤال سحابياً:", error);
+                alert("حدث خطأ أثناء الإرسال، تأكد من تفعيل قواعد الحماية في فيربيز.");
+            }
+        }
+
+        window.submitReply = async function(id) {
+            const input = document.getElementById(`reply-input-${id}`);
+            const replyText = input.value.trim();
+            if(!replyText) return alert("من فضلك اكتب الرد أولاً!");
+
+            try {
+                const docRef = doc(db, "questions", id);
+                await updateDoc(docRef, { reply: replyText });
+            } catch (error) {
+                console.error("حدث خطأ أثناء إرسال الرد:", error);
+            }
+        }
+
+        const q = query(collection(db, "questions"), orderBy("timestamp", "asc"));
+        onSnapshot(q, (snapshot) => {
+            window.allFirebaseQuestions = [];
+            snapshot.forEach((doc) => {
+                window.allFirebaseQuestions.push({ id: doc.id, ...doc.data() });
+            });
+            if (typeof window.renderQuestions === 'function') window.renderQuestions();
+            if (typeof window.renderDevQuestions === 'function') window.renderDevQuestions();
+        });
+    </script>
+</head>
+<body class="text-slate-800 transition-colors duration-300 relative min-h-screen pb-20" onload="fetchSurahs()">
+
+    <div class="fixed bottom-6 right-6 z-[999] flex flex-col items-end pointer-events-none">
+        <div class="bg-emerald-900 border-2 border-gold-500 text-white p-4 rounded-2xl shadow-2xl flex items-center gap-4 pointer-events-auto transition-all duration-300 hover:scale-105 group max-w-xs">
+            <div class="text-right flex-1">
+                <span class="block text-[10px] text-gold-500 font-bold mb-0.5 tracking-wider">مطور الموقع</span>
+                <h5 class="text-xs font-bold whitespace-nowrap text-white">AHMED WAEL SAAD</h5>
+                <p class="text-[10px] text-emerald-200/80 mt-0.5">متاح للاستشارات البرمجية</p>
+            </div>
+            <a href="https://wa.me/201067579526" target="_blank" rel="noopener noreferrer" class="bg-emerald-800 hover:bg-emerald-700 p-2.5 rounded-xl border border-gold-500/30 transition-all duration-300 group-hover:border-gold-500 flex items-center justify-center relative">
+                <span class="absolute inline-flex h-full w-full rounded-xl bg-gold-500 opacity-20 animate-ping left-0 top-0"></span>
+                <svg class="w-5 h-5 text-gold-500 fill-current" viewBox="0 0 24 24">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397 0 11.948 0c3.179.001 6.165 1.24 8.413 3.494 2.25 2.253 3.487 5.244 3.484 8.425-.003 6.599-5.342 11.946-11.893 11.946-1.993-.001-3.951-.5-5.688-1.448L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.37 9.864-9.799.002-2.623-1.023-5.09-2.885-6.956C16.528 1.984 14.069 1.96 11.95 1.96c-5.437 0-9.86 4.37-9.864 9.8 0 1.737.478 3.436 1.388 4.933l-.994 3.633 3.717-.973zm13.066-5.633c-.29-.146-1.72-.849-1.985-.946-.266-.097-.459-.146-.653.146-.193.291-.748.946-.917 1.14-.168.194-.338.219-.628.073-.29-.146-1.227-.452-2.34-1.444-.866-.773-1.451-1.728-1.62-2.02-.169-.291-.018-.448.127-.593.13-.13.29-.34.436-.509.145-.17.193-.291.29-.485.097-.194.049-.364-.025-.509-.072-.146-.653-1.577-.893-2.159-.233-.562-.471-.485-.653-.495l-.556-.007c-.193 0-.507.073-.772.364-.266.291-1.014.994-1.014 2.424 0 1.43 1.039 2.813 1.184 3.007.145.194 2.044 3.121 4.952 4.378.692.299 1.233.479 1.654.613.695.221 1.328.19 1.829.115.557-.083 1.72-.703 1.962-1.383.242-.679.242-1.262.17-1.383-.074-.12-.271-.194-.562-.34z"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+
+    <header class="bg-emerald-900 text-white shadow-xl sticky top-0 z-50 border-b-2 border-gold-500">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <img src="mrhesham.jpeg" alt="mrhesham" class="h-12 w-12 rounded-full object-cover border-2 border-gold-500 shadow-lg">
+                <div class="text-right">
+                    <h1 class="text-3xl font-bold font-quran tracking-wide text-gold-500">مِداد الذِّكر</h1>
+                    <p class="text-xs text-emerald-200 mt-1">بوابتك للتاريخ الإسلامي والقرآن الكريم</p>
+                </div>
+            </div>
+            <nav class="flex flex-wrap gap-2 justify-center">
+                <button onclick="switchTab('quran')" id="btn-quran" class="px-6 py-2 rounded-full bg-gold-500 text-emerald-950 font-bold shadow transition-all">القرآن الكريم</button>
+                <button onclick="switchTab('quiz')" id="btn-quiz" class="px-6 py-2 rounded-full bg-emerald-800 text-emerald-100 hover:bg-emerald-700 font-bold transition-all hover:scale-105 active:scale-100">مسابقة الأسئلة</button>
+                <button onclick="switchTab('history')" id="btn-history" class="px-6 py-2 rounded-full bg-emerald-800 text-emerald-100 hover:bg-emerald-700 font-bold transition-all hover:scale-105 active:scale-100">التاريخ الإسلامي</button>
+                <button onclick="toggleDevPanel()" class="px-6 py-2 rounded-full bg-emerald-700 text-emerald-100 font-bold shadow transition-all hover:bg-emerald-600 hover:scale-105 active:scale-100 border border-gold-500/30">لوحة المطور</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- قسم القرآن الكريم -->
+    <main id="quran-section" class="container mx-auto px-4 py-8">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 mb-8 text-center hover:shadow-xl transition-shadow duration-300">
+            <h2 class="text-2xl font-bold text-emerald-900 mb-2">المصحف الإلكتروني المتكامل</h2>
+            <p class="text-slate-600 max-w-xl mx-auto text-sm mb-6">تصفح الـ 114 سورة كاملة، مع إمكانية الاستماع الصوتي والتفسير الميسر لكل آية.</p>
+            <div class="bg-emerald-50 border border-emerald-200 p-5 rounded-xl text-right max-w-2xl mx-auto shadow-inner relative overflow-hidden group">
+                <span class="absolute -left-4 -bottom-6 text-7xl text-emerald-100 transform rotate-12 opacity-50 transition-transform group-hover:rotate-0">🤲</span>
+                <h4 class="font-bold text-emerald-900 mb-2 relative z-10 flex items-center gap-2">
+                    <span class="text-gold-600 transition-transform group-hover:scale-125">✦</span>
+                    دعاء لعمي الغالي
+                </h4>
+                <p class="text-emerald-800 text-sm leading-relaxed font-medium relative z-10 antialiased Amiri transition-colors group-hover:text-emerald-950">
+                    "اللهم اغفر لعمي وارحمه، وعافه واعف عنه، وأكرم نزله، ووسع مدخله، واغسله بالماء والثلج والبرد، ونقه من الخطايا كما ينقى الثوب الأبيض من الدنس. اللهم جازه بالحسنات إحساناً، وبالسيئات عفواً وغفراناً، واجعل قبره روضة من رياض الجنة، واجمعه مع النبيين والصديقين والشهداء والصالحين في الفردوس الأعلى."
+                </p>
+            </div>
+        </div>
+
+        <div id="surahs-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div class="text-center py-12 col-span-full text-emerald-900 animate-pulse">جاري تحميل سور القرآن الكريم...</div>
+        </div>
+
+        <div id="surah-modal" class="fixed inset-0 bg-black/60 hidden items-center justify-center p-4 z-50 backdrop-blur-sm transition-opacity duration-300">
+            <div class="bg-ivory w-full max-w-4xl h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-gold-500 scale-90 transition-transform duration-300">
+                <div class="bg-emerald-900 p-4 text-white flex justify-between items-center">
+                    <h3 id="modal-title" class="text-2xl font-quran text-gold-500 font-bold">اسم السورة</h3>
+                    <button onclick="closeSurahModal()" class="text-white hover:text-gold-500 text-2xl font-bold transition-colors">&times;</button>
+                </div>
+                <div class="p-4 bg-emerald-50 border-b border-emerald-100 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <audio id="audio-player" controls class="w-full sm:w-2/3 h-10 rounded shadow"></audio>
+                    <span id="modal-info" class="text-sm font-medium text-emerald-900 bg-white px-3 py-1 rounded-full shadow-sm hover:scale-105 transition-transform"></span>
+                </div>
+                <div id="modal-content" class="p-8 overflow-y-auto flex-1 leading-loose text-center quran-text text-2xl space-y-4 text-emerald-950 select-none"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- قسم مسابقة الأسئلة (جديد) -->
+    <main id="quiz-section" class="container mx-auto px-4 py-8 hidden">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 mb-8 text-center hover:shadow-xl transition-shadow duration-300">
+            <h2 class="text-2xl font-bold text-emerald-900 mb-2">مسابقة مِداد الذِّكر الثقافية</h2>
+            <p class="text-slate-600 max-w-xl mx-auto text-sm mb-4">أكثر من 100 سؤال وجواب لاختبار معلوماتك في القرآن الكريم والتاريخ الإسلامي العريق.</p>
+            
+            <div class="flex justify-center gap-4 mt-2">
+                <button onclick="startQuiz('quran')" class="px-6 py-2.5 rounded-xl bg-emerald-900 text-gold-500 font-bold hover:bg-emerald-800 shadow transition-all">أسئلة القرآن الكريم</button>
+                <button onclick="startQuiz('history')" class="px-6 py-2.5 rounded-xl bg-gold-500 text-emerald-950 font-bold hover:bg-gold-600 shadow transition-all">أسئلة التاريخ الإسلامي</button>
+            </div>
+        </div>
+
+        <!-- صندوق اللعبة -->
+        <div id="quiz-game-box" class="max-w-2xl mx-auto bg-white rounded-2xl border border-emerald-100 shadow-xl overflow-hidden hidden">
+            <div class="bg-emerald-900 p-4 text-white flex justify-between items-center border-b border-gold-500">
+                <h3 id="quiz-type-title" class="font-bold text-gold-500">اسم القسم</h3>
+                <span id="quiz-progress" class="text-xs bg-emerald-800 px-3 py-1 rounded-full text-emerald-200">سؤال 0 / 0</span>
+            </div>
+            <div class="p-6">
+                <!-- شريط التقدم اللحظي -->
+                <div class="w-full bg-slate-100 h-2 rounded-full mb-6 overflow-hidden">
+                    <div id="quiz-progress-bar" class="bg-gold-500 h-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div id="quiz-question-container" class="mb-6">
+                    <h4 id="quiz-question-text" class="text-lg font-bold text-emerald-950 mb-4 leading-relaxed">جاري تحميل السؤال...</h4>
+                    <div id="quiz-options-wrapper" class="grid grid-cols-1 gap-3">
+                        <!-- الخيارات ستظهر هنا برمجياً -->
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center border-t border-slate-100 pt-4">
+                    <span class="text-sm text-slate-500 font-medium">النقاط الحالية: <span id="quiz-score" class="text-emerald-700 font-bold">0</span></span>
+                    <button id="quiz-next-btn" onclick="nextQuestion()" class="px-5 py-2 text-sm bg-slate-200 text-slate-400 font-bold rounded-xl pointer-events-none transition-all">السؤال التالي &larr;</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- شاشة النتيجة النهائية -->
+        <div id="quiz-result-box" class="max-w-md mx-auto bg-white rounded-2xl border border-gold-500 shadow-2xl p-8 text-center hidden">
+            <span class="text-5xl block mb-4">🎉</span>
+            <h3 class="text-2xl font-bold text-emerald-900 mb-2">تهانينا، لقد أتممت المسابقة!</h3>
+            <p class="text-slate-600 text-sm mb-6">إليك تفاصيل نتيجتك وحصاد معرفتك الإيمانية:</p>
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-6">
+                <span class="block text-slate-500 text-xs mb-1">النتيجة النهائية</span>
+                <span id="final-score-text" class="text-3xl font-bold text-emerald-950">0 / 0</span>
+            </div>
+            <button onclick="resetQuiz()" class="w-full py-3 bg-gold-500 text-emerald-950 font-bold rounded-xl hover:bg-gold-600 shadow transition-all">إعادة المحاولة واللعب مجدداً</button>
+        </div>
+    </main>
+
+    <!-- قسم التاريخ الإسلامي -->
+    <main id="history-section" class="container mx-auto px-4 py-8 hidden">
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 mb-8 text-center hover:shadow-xl transition-shadow duration-300">
+            <h2 class="text-2xl font-bold text-emerald-900 mb-2">موسوعة الحقب التاريخية والدراسات التفصيلية</h2>
+            <p class="text-slate-600 max-w-2xl mx-auto text-sm">استكشف العصور الإسلامية من خلال مقارنة موضوعية، مع إمكانية طرح استفساراتك وتلقي الردود المباشرة من المطور.</p>
+        </div>
+
+        <div id="dev-panel" class="hidden bg-emerald-950 text-white rounded-2xl p-6 mb-8 border border-gold-500/40 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-emerald-800 pb-3 mb-4">
+                <h3 class="text-xl font-bold text-gold-500 flex items-center gap-2">🛠️ لوحة تحكم المطور (Ahmed Wael)</h3>
+                <button onclick="toggleDevPanel()" class="text-slate-400 hover:text-white">&times; إغلاق</button>
+            </div>
+            <div id="dev-questions-list" class="space-y-4 max-h-60 overflow-y-auto pr-2"></div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            <div class="lg:col-span-3 flex flex-col gap-2" id="eras-menu"></div>
+            
+            <div class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 group transition-all duration-300 hover:shadow-2xl">
+                <h3 id="era-title" class="text-3xl font-bold text-emerald-900 mb-4 border-b pb-2 border-gold-500 font-quran"></h3>
+                <p id="era-desc" class="text-slate-600 mb-6 leading-relaxed bg-emerald-50/50 p-4 rounded-xl text-sm"></p>
+                
+                <div class="mb-6 bg-ivory border border-gold-500/20 rounded-xl p-4 shadow-inner">
+                    <h4 class="font-bold text-emerald-900 mb-3 flex items-center gap-2 text-xs border-b pb-1 border-dashed border-gold-500/30">
+                        🔍 بطاقة الدراسة التفصيلية للعصر
+                    </h4>
+                    <div class="grid grid-cols-1 gap-3 text-xs">
+                        <div class="bg-white p-2 rounded-lg border border-emerald-50">
+                            <span class="block text-slate-400 font-medium mb-0.5">العاصمة المركزية:</span>
+                            <span id="era-capital" class="font-bold text-emerald-800 text-xs"></span>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-emerald-50">
+                            <span class="block text-slate-400 font-medium mb-0.5">أبرز الحكام والخلفاء:</span>
+                            <span id="era-leaders" class="font-bold text-emerald-800 text-xs"></span>
+                        </div>
+                        <div class="bg-white p-2 rounded-lg border border-emerald-50">
+                            <span class="block text-slate-400 font-medium mb-0.5">أهم المعالم الحضارية:</span>
+                            <span id="era-monuments" class="font-bold text-emerald-800 text-xs"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-4 mb-4">
+                    <div class="bg-emerald-50/30 p-4 rounded-xl border-r-4 border-emerald-700">
+                        <h4 class="font-bold text-md text-emerald-800 mb-2 flex items-center gap-2">📖 مصادر ومؤرخو المسلمين</h4>
+                        <p id="era-muslims" class="text-slate-700 text-xs leading-relaxed whitespace-pre-line Amiri"></p>
+                    </div>
+                    <div class="bg-amber-50/30 p-4 rounded-xl border-r-4 border-gold-500">
+                        <h4 class="font-bold text-md text-gold-600 mb-2 flex items-center gap-2">🌍 نظرة المستشرقين والغرب</h4>
+                        <p id="era-orientalists" class="text-slate-700 text-xs leading-relaxed whitespace-pre-line Amiri"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-4 bg-white rounded-2xl p-6 shadow-sm border border-emerald-100 sticky top-24">
+                <h4 class="font-bold text-xl text-emerald-900 mb-2 flex items-center gap-2">💬 صندوق استفساراتي الخاصة</h4>
+                <p class="text-slate-500 text-xs mb-4">اسأل المطور عن أي تفاصيل تاريخية أو تقنية، واستفساراتك تظهر لك وحدك بكل سرية.</p>
+                
+                <div class="flex flex-col gap-2 mb-6">
+                    <textarea id="user-question-input" rows="3" placeholder="اكتب استفسارك التاريخي السري حول هذا العصر هنا..." class="w-full px-4 py-2 text-sm border border-emerald-100 rounded-xl focus:outline-none focus:border-gold-500 bg-emerald-50/20 resize-none"></textarea>
+                    <button onclick="submitQuestion()" class="w-full py-2.5 text-sm bg-gold-500 text-emerald-950 font-bold rounded-xl hover:bg-gold-600 transition-colors shadow-md shadow-gold-500/10">إرسال الاستفسار السري</button>
+                </div>
+
+                <div id="questions-display-container" class="space-y-4 max-h-[400px] overflow-y-auto pl-1"></div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-emerald-950 text-emerald-200 py-8 mt-16 border-t-2 border-gold-500 text-center text-sm">
+        <div class="container mx-auto px-4">
+            <p class="font-quran text-lg text-gold-500 mb-2">مِداد الذِّكر</p>
+            <p class="text-xs text-emerald-300/70 mb-4">جميع الحقوق محفوظة © 2026</p>
+            <div class="w-16 h-0.5 bg-gold-500/30 mx-auto mb-4"></div>
+            <p class="text-xs">تطوير وإشراف هندسي: 
+                <a href="https://wa.me/201067579526" target="_blank" rel="noopener noreferrer" class="text-gold-500 hover:text-gold-600 transition-colors font-bold tracking-wide border-b border-dashed border-gold-500/40 pb-0.5 mx-1">
+                    AHMED WAEL SAAD
+                </a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- محرك جافا سكريبت وبيانات الأسئلة المحدثة -->
+    <script>
+        window.allFirebaseQuestions = [];
+        window.currentEraIndex = 0;
+        let historyLoaded = false;
+
+        // قاعدة بيانات تحتوي على 105 سؤال وجواب منظمين جداً
+        const quizDatabase = {
+            quran: [
+                { q: "ما هي السورة التي تعدل ثلث القرآن الكريم؟", o: ["سورة الإخلاص", "سورة الفاتحة", "سورة الكافرون", "سورة الملك"], a: 0 },
+                { q: "ما هي أطول سورة في القرآن الكريم؟", o: ["سورة آل عمران", "سورة البقرة", "سورة النساء", "سورة المائدة"], a: 1 },
+                { q: "كم عدد سور القرآن الكريم؟", o: ["110 سورة", "112 سورة", "114 سورة", "116 سورة"], a: 2 },
+                { q: "ما هي السورة التي تسمى عروس القرآن؟", o: ["سورة الرحمن", "سورة يس", "سورة الواقعة", "سورة الملك"], a: 0 },
+                { q: "ما هي السورة التي تسمى قلب القرآن؟", o: ["سورة البقرة", "سورة الكهف", "سورة يس", "سورة يوسف"], a: 2 },
+                { q: "في أي سورة وردت آية الكرسي؟", o: ["سورة آل عمران", "سورة البقرة", "سورة النساء", "سورة الأعراف"], a: 1 },
+                { q: "ما هي السورة التي لا تبدأ بـ 'بسم الله الرحمن الرحيم'؟", o: ["سورة التوبة", "سورة النمل", "سورة الأنفال", "سورة هود"], a: 0 },
+                { q: "ما هي السورة التي تحتوي على بسملتين؟", o: ["سورة الفاتحة", "سورة الرحمن", "سورة النمل", "سورة الإسراء"], a: 2 },
+                { q: "ما هي أقصر سورة في القرآن الكريم؟", o: ["سورة العصر", "سورة الإخلاص", "سورة الكوثر", "سورة الناس"], a: 2 },
+                { q: "كم عدد أجزاء القرآن الكريم؟", o: ["25 جزء", "30 جزء", "40 جزء", "60 جزء"], a: 1 },
+                { q: "ما هي السورة التي تنجي قارئها من عذاب القبر؟", o: ["سورة يس", "سورة الملك", "سورة الكهف", "سورة السجدة"], a: 1 },
+                { q: "أي سورة يُستحب قراءتها يوم الجمعة؟", o: ["سورة الكهف", "سورة يوسف", "سورة مريم", "سورة الدخان"], a: 0 },
+                { q: "ما هي السورة التي سُميت باسم امرأة؟", o: ["سورة مريم", "سورة عائشة", "سورة فاطمة", "سورة خديجة"], a: 0 },
+                { q: "كم عدد السجدات في القرآن الكريم؟", o: ["10 سجدات", "12 سجدة", "15 سجدة", "20 سجدة"], a: 2 },
+                { q: "ما هي السورة الملقبة بالسبع المثاني؟", o: ["سورة الفاتحة", "سورة البقرة", "سورة الإخلاص", "سورة يس"], a: 0 },
+                { q: "ما هي أطول آية في القرآن الكريم؟", o: ["آية الكرسي", "آية الدين في سورة البقرة", "آية الربا", "آية المداينة في آل عمران"], a: 1 },
+                { q: "ما هي السورة التي نزلت في عم النبي وزوجته؟", o: ["سورة المسد", "سورة الكافرون", "سورة النصر", "سورة الهمزة"], a: 0 },
+                { q: "من هو الصحابي الوحيد الذي ذُكر اسمه صراحة في القرآن؟", o: ["زيد بن حارثة", "أبو بكر الصديق", "علي بن أبي طالب", "عمر بن الخطاب"], a: 0 },
+                { q: "ما هي السورة التي تنتهي جميع آياتها بحرف الراء؟", o: ["سورة الكوثر", "سورة العصر", "سورة النصر", "سورة القدر"], a: 0 },
+                { q: "ما هي السورة الملقبة بسورة بني إسرائيل؟", o: ["سورة الإسراء", "سورة الكهف", "سورة يوسف", "سورة يونس"], a: 0 },
+                { q: "ما هي السورة التي سُميت باسم أحد أركان الإسلام؟", o: ["سورة الصلاة", "سورة الصوم", "سورة الحج", "سورة الزكاة"], a: 2 },
+                { q: "في أي سورة ورد ذكر 'البعوضة' كمثل؟", o: ["سورة البقرة", "سورة النحل", "سورة العنكبوت", "سورة النمل"], a: 0 },
+                { q: "ما هي السورة التي سُميت باسم ميقات زمني؟", o: ["سورة الفجر", "سورة الظهر", "سورة العشاء", "سورة المغرب"], a: 0 },
+                { q: "كم عدد السور المكية في القرآن الكريم؟", o: ["86 سورة", "28 سورة", "114 سورة", "90 سورة"], a: 0 },
+                { q: "كم عدد السور المدنية في القرآن الكريم؟", o: ["86 سورة", "28 سورة", "30 سورة", "14 سورة"], a: 1 },
+                { q: "ما هي السورة التي ذكرت فيها قصة أصحاب الأخدود؟", o: ["سورة البروج", "سورة الطارق", "سورة الغاشية", "سورة الفجر"], a: 0 },
+                { q: "أي سورة بدأت باسم فاكهتين؟", o: ["سورة التين", "سورة الرمان", "سورة الأعناب", "سورة الزيتون"], a: 0 },
+                { q: "أي سورة تسمى سورة النعم؟", o: ["سورة النحل", "سورة الرحمن", "سورة النور", "سورة الأنعام"], a: 0 },
+                { q: "ما هي السورة التي تسمى الفاضحة؟", o: ["سورة التوبة", "سورة المنافقون", "سورة الحجرات", "سورة الحشر"], a: 0 },
+                { q: "ما هي أطول كلمة في القرآن الكريم؟", o: ["فأسقيناكموه", "أنلزمكموها", "المستغفرين", "فسيكفيكهم"], a: 0 },
+                { q: "سورة سُميت باسم حيوان إذا ذُبح انتهت به فتنة بني إسرائيل؟", o: ["سورة البقرة", "سورة الأنعام", "سورة النحل", "سورة الفيل"], a: 0 },
+                { q: "أي سورة تحث بشكل مكثف على الأخلاق والآداب الاجتماعية؟", o: ["سورة الحجرات", "سورة لقمان", "سورة النور", "سورة المؤمنون"], a: 0 },
+                { q: "سورة تُقرأ للحفظ من فتنة الدجال (أول 10 آيات)؟", o: ["سورة الكهف", "سورة الدخان", "سورة الجاثية", "سورة يس"], a: 0 },
+                { q: "كم مرة ذُكرت كلمة 'رمضان' في القرآن؟", o: ["مرة واحدة", "مرتين", "ثلاث مرات", "أربع مرات"], a: 0 },
+                { q: "ما هي السورة التي انتهت باسم نبيين؟", o: ["سورة الأعلى", "سورة الشمس", "سورة الليل", "سورة الضحى"], a: 0 },
+                { q: "ما هي السورة التي بدأت بوصف خيل الجهاد؟", o: ["سورة العاديات", "سورة النازعات", "سورة المرسلات", "سورة الصافات"], a: 0 },
+                { q: "من هو النبي الذي ذُكر في القرآن أكثر من غيره؟", o: ["موسى عليه السلام", "إبراهيم عليه السلام", "محمد ﷺ", "عيسى عليه السلام"], a: 0 },
+                { q: "أي سورة تسمى سورة القتال؟", o: ["سورة محمد", "سورة الأنفال", "سورة التوبة", "سورة الفتح"], a: 0 },
+                { q: "ما هي السورة التي تسمى الحواميم السبعة (أولها)؟", o: ["سورة غافر", "سورة فصلت", "سورة الشورى", "سورة الزخرف"], a: 0 },
+                { q: "في أي سورة وردت قصة قارون؟", o: ["سورة القصص", "سورة العنكبوت", "سورة النمل", "سورة الكهف"], a: 0 },
+                { q: "ما هي السورة التي تسمى سورة التوديع؟", o: ["سورة النصر", "سورة الكافرون", "سورة الفتح", "سورة الإخلاص"], a: 0 },
+                { q: "كم عدد السور التي تبدأ بالحروف المقطعة؟", o: ["29 سورة", "30 سورة", "15 سورة", "10 سور"], a: 0 },
+                { q: "أي سورة بدأت بـ 'يا أيها النبي اتق الله'؟", o: ["سورة الأحزاب", "سورة الطلاق", "سورة التحريم", "سورة الممتحنة"], a: 0 },
+                { q: "في أي سورة ذكرت قصة ذي القرنين؟", o: ["سورة الكهف", "سورة الأنبياء", "سورة الصافات", "سورة ص"], a: 0 },
+                { q: "أي سورة سُميت باسم كوكب؟", o: ["سورة النجم", "سورة القمر", "سورة الشمس", "سورة النور"], a: 1 },
+                { q: "ما هي السورة التي تسمى سورة العقود؟", o: ["سورة المائدة", "سورة الأنعام", "سورة الأعراف", "سورة النساء"], a: 0 },
+                { q: "ما هي السورة التي ذكرت فيها غزوة بدر؟", o: ["سورة الأنفال", "سورة آل عمران", "سورة التوبة", "سورة الفتح"], a: 0 },
+                { q: "ما هي السورة التي ذكرت فيها غزوة حنين؟", o: ["سورة التوبة", "سورة الأنفال", "سورة الفتح", "سورة الأحزاب"], a: 0 },
+                { q: "أي سورة تسمى سورة المصابيح؟", o: ["سورة فصلت", "سورة النور", "سورة النجم", "سورة السجدة"], a: 0 },
+                { q: "ما السورة التي بدأت بـ 'المر'؟", o: ["سورة الرعد", "سورة يونس", "سورة هود", "سورة يوسف"], a: 0 },
+                { q: "ما السورة التي بدأت بـ 'اقترب للناس حسابهم'؟", o: ["سورة الأنبياء", "سورة الحج", "سورة المؤمنون", "سورة النور"], a: 0 },
+                { q: "أي سورة سُميت باسم معدن؟", o: ["سورة الحديد", "سورة الذهب", "سورة الفضة", "سورة النحاس"], a: 0 }
+            ],
+            history: [
+                { q: "متى كانت غزوة بدر الكبرى؟", o: ["2 هـ", "3 هـ", "4 هـ", "5 هـ"], a: 0 },
+                { q: "من هو أول خليفة للمسلمين بعد وفاة النبي ﷺ؟", o: ["عمر بن الخطاب", "علي بن أبي طالب", "أبو بكر الصديق", "عثمان بن عفان"], a: 2 },
+                { q: "ما هي عاصمة الدولة الأموية؟", o: ["بغداد", "المدينة المنورة", "دمشق", "القاهرة"], a: 2 },
+                { q: "من هو القائد الذي فتح الأندلس؟", o: ["طارق بن زياد", "خالد بن الوليد", "عمرو بن العاص", "عقبة بن نافع"], a: 0 },
+                { q: "في أي عصر إسلامي تأسس بيت الحكمة في بغداد؟", o: ["العصر الراشدي", "العصر الأموي", "العصر العباسي", "العصر الفاطمي"], a: 2 },
+                { q: "من هو مؤسس الدولة الأيوبية؟", o: ["صلاح الدين الأيوبي", "الملك العادل", "نور الدين زنكي", "الملك الكامل"], a: 0 },
+                { q: "ما هي المعركة التي انتصر فيها المماليك على التتار وحموا الإسلام؟", o: ["معركة حطين", "معركة عين جالوت", "معركة اليرموك", "معركة القادسية"], a: 1 },
+                { q: "من هو السلطان العثماني الذي فتح القسطنطينية؟", o: ["سليمان القانوني", "سليم الأول", "محمد الفاتح", "عثمان الأول"], a: 2 },
+                { q: "كم دامت خلافة أبي بكر الصديق رضي الله عنه؟", o: ["سنتان وثلاثة أشهر", "خمس سنوات", "عشر سنوات", "أربع سنوات"], a: 0 },
+                { q: "في عهد أي خليفة تم جمع القرآن في مصحف واحد لأول مرة؟", o: ["عمر بن الخطاب", "أبو بكر الصديق", "عثمان بن عفان", "علي بن أبي طالب"], a: 1 },
+                { q: "ما هي عاصمة الدولة الفاطمية بعد انتقالها لمصر؟", o: ["الإسكندرية", "الفسطاط", "القاهرة", "المهدية"], a: 2 },
+                { q: "من هو الخليفة الراشدي الذي لُقب بالفاروق؟", o: ["عثمان بن عفان", "علي بن أبي طالب", "عمر بن الخطاب", "أبو بكر الصديق"], a: 2 },
+                { q: "ما هي المعركة الشهيرة التي قادها صلاح الدين لتحرير القدس؟", o: ["معركة حطين", "معركة ملاذكرد", "معركة عين جالوت", "معركة مرج دابق"], a: 0 },
+                { q: "من هو القائد الإسلامي الملقب بسيف الله المسلول؟", o: ["سعد بن أبي وقاص", "خالد بن الوليد", "أبو عبيدة بن الجراح", "حمزة بن عبد المطلب"], a: 1 },
+                { q: "في أي سنة هجرية وقعت غزوة أحد؟", o: ["2 هـ", "3 هـ", "4 هـ", "5 هـ"], a: 1 },
+                { q: "من هو الخليفة الأموي الذي قام بتعريب الدواوين وسك العملة؟", o: ["معاوية بن أبي سفيان", "عبد الملك بن مروان", "عمر بن عبد العزيز", "وليد بن عبد الملك"], a: 1 },
+                { q: "أي خليفة أموي لُقب بخامس الخلفاء الراشدين لعدله؟", o: ["عمر بن عبد العزيز", "هشام بن عبد الملك", "مروان بن الحكم", "سليمان بن عبد الملك"], a: 0 },
+                { q: "من هو القائد الذي فتح مصر في عهد عمر بن الخطاب؟", o: ["سعد بن أبي وقاص", "عمرو بن العاص", "خالد بن الوليد", "شرحبيل بن حسنة"], a: 1 },
+                { q: "ما هي أول عاصمة للدولة العباسية قبل بناء بغداد؟", o: ["الكوفة", "البصرة", "الأنبار", "دمشق"], a: 2 },
+                { q: "من هو الخليفة العباسي الذي ارتبط اسمه بقصص ألف ليلة وليلة والازدهار؟", o: ["أبو جعفر المنصور", "هارون الرشيد", "المأمون", "المعتصم بالله"], a: 1 },
+                { q: "من هو بطل معركة عين جالوت من سلاطين المماليك؟", o: ["الظاهر بيبرس", "سيف الدين قطز", "عز الدين أيبك", "المنصور قلاوون"], a: 1 },
+                { q: "ما اسم الجامع الشهير الذي بناه الفاطميون في القاهرة؟", o: ["جامع عمرو بن العاص", "الجامع الأزهر", "مسجد ابن طولون", "مسجد السلطان حسن"], a: 1 },
+                { q: "من هو الخليفة الراشدي الذي استشهد وهو يقرأ القرآن؟", o: ["عمر بن الخطاب", "عثمان بن عفان", "علي بن أبي طالب", "أبو بكر الصديق"], a: 1 },
+                { q: "في عهد من من الخلفاء تم تأسيس الدواوين ونظام العسس (الشرطة)؟", o: ["أبو بكر الصديق", "عمر بن الخطاب", "عثمان بن عفان", "علي بن أبي طالب"], a: 1 },
+                { q: "ما هي المعركة التي فتحت الباب لانتشار الإسلام في بلاد فارس؟", o: ["معركة القادسية", "معركة اليرموك", "معركة نهاوند", "معركة ذات الصواري"], a: 0 },
+                { q: "ما هي المعركة التي هزمت فيها جيوش المسلمين الروم بالشام؟", o: ["معركة اليرموك", "معركة حطين", "معركة أجنادين", "معركة الجسر"], a: 0 },
+                { q: "من هو مؤسس الدولة الأموية؟", o: ["يزيد بن معاوية", "معاوية بن أبي سفيان", "مروان بن الحكم", "عبد الملك بن مروان"], a: 1 },
+                { q: "ما هو الاسم القديم للمدينة المنورة قبل الهجرة النبوية؟", o: ["مكة", "يثرب", "الطائف", "عمورية"], a: 1 },
+                { q: "كم عدد الغزوات التي قادها الرسول ﷺ بنفسه؟", o: ["19 غزوة", "27 غزوة", "9 غزوات", "35 غزوة"], a: 1 },
+                { q: "أي نبي بنى الكعبة المشرفة مع ابنه إسماعيل؟", o: ["آدم عليه السلام", "إبراهيم عليه السلام", "نوح عليه السلام", "موسى عليه السلام"], a: 1 },
+                { q: "متى تم فتح مكة المكرمة؟", o: ["6 هـ", "7 هـ", "8 هـ", "9 هـ"], a: 2 },
+                { q: "ما اسم أول دار أرقم اتخذها الرسول للدعوة سراً؟", o: ["دار الأرقم بن أبي الأرقم", "دار أبو بكر الصديق", "دار الندوة", "دار عثمان بن عفان"], a: 0 },
+                { q: "من هي أول زوجات الرسول ﷺ وأول من آمن به؟", o: ["عائشة بنت أبي بكر", "خديجة بنت خويلد", "حفصة بنت عمر", "أم سلمة"], a: 1 },
+                { q: "من هو الصحابي الذي أشار بحفر الخندق في غزوة الأحزاب؟", o: ["سلمان الفارسي", "عمار بن ياسر", "بلال بن رباح", "أبو هريرة"], a: 0 },
+                { q: "ما هي أول هجرة في الإسلام كانت إلى أين؟", o: ["المدينة المنورة", "الحبشة", "الطائف", "اليمن"], a: 1 },
+                { q: "من هو أول مؤذن في الإسلام؟", o: ["بلال بن رباح", "عبد الله بن أم مكتوم", "زيد بن حارثة", "أبو محذورة"], a: 0 },
+                { q: "في أي سنة ميلادية كانت الهجرة النبوية المشرفة؟", o: ["610 م", "622 م", "632 م", "600 م"], a: 1 },
+                { q: "ما اسم الصلح الذي عقده النبي مع قريش عام 6 هجرية؟", o: ["صلح الحديبية", "صلح يثرب", "حلف الفضول", "صلح الطائف"], a: 0 },
+                { q: "من هو الصحابي الذي لُقب بـ ذي النورين؟", o: ["عثمان بن عفان", "علي بن أبي طالب", "حمزة بن عبد المطلب", "جعفر بن أبي طالب"], a: 0 },
+                { q: "ما هي آخر غزوة قادها الرسول ﷺ؟", o: ["غزوة تبوك", "غزوة خيبر", "غزوة حنين", "غزوة الطائف"], a: 0 },
+                { q: "من هو مؤسس السلالة العباسية وأول خلفائها؟", o: ["أبو العباس السفاح", "أبو جعفر المنصور", "هارون الرشيد", "المأمون"], a: 0 },
+                { q: "من بنى مدينة بغداد الدائرية واتخذها عاصمة؟", o: ["أبو جعفر المنصور", "هارون الرشيد", "المهدي", "المعتصم بالله"], a: 0 },
+                { q: "ما اسم المعركة البحرية الأولى والشهيرة في تاريخ الإسلام؟", o: ["معركة ذات الصواري", "معركة بلاط الشهداء", "معركة الدير", "معركة قبرص"], a: 0 },
+                { q: "من هو القائد الإسلامي الذي انتصر في معركة بلاط الشهداء بفرنسا؟", o: ["عبد الرحمن الغافقي", "طارق بن زياد", "موسى بن نصير", "عقبة بن نافع"], a: 0 },
+                { q: "ما اسم المعركة الفاصلة التي انتصر فيها السلاجقة على الروم عام 1071م؟", o: ["معركة ملاذكرد", "معركة نيقوبوليس", "معركة قونية", "معركة أنقرة"], a: 0 },
+                { q: "من هو آخر سلاطين الدولة الأيوبية في مصر؟", o: ["توران شاه", "الصالح أيوب", "الملك المعظم", "شجر الدر"], a: 0 },
+                { q: "أي دولة إسلامية دامت قرابة 600 عام وانتهت في القرن العشرين؟", o: ["الدولة العثمانية", "الدولة العباسية", "الدولة الأموية", "دولة المماليك"], a: 0 },
+                { q: "من هو الصحابي الذي لُقب بأمين هذه الأمة؟", o: ["أبو عبيدة بن الجراح", "حذيفة بن اليمان", "معاذ بن جبل", "عبد الله بن مسعود"], a: 0 },
+                { q: "من هو الصحابي الذي قاد جيوش المسلمين في معركة القادسية؟", o: ["سعد بن أبي وقاص", "خالد بن الوليد", "النعمان بن مقرن", "المثنى بن حارثة"], a: 0 },
+                { q: "في أي مدينة توفي الرسول ﷺ ودُفن؟", o: ["مكة المكرمة", "المدينة المنورة", "الطائف", "القدس"], a: 1 },
+                { q: "من هي ابنة الرسول ﷺ وزوجة الخليفة علي بن أبي طالب؟", o: ["فاطمة الزهراء", "زينب", "رقية", "أم كلثوم"], a: 0 },
+                { q: "ما هو اللقب الذي أطلق على حكام مصر من المماليك والأيوبيين؟", o: ["السلطان", "الخليفة", "الملك", "الأمير"], a: 0 },
+                { q: "من هو السلطان العثماني الذي لُقب بـ القانوني لحنكته التشريعية؟", o: ["سليمان القانوني", "محمد الثاني", "أحمد الأول", "مراد الرابع"], a: 0 }
+            ]
+        };
+
+        let currentQuestionsList = [];
+        let currentQuestionIdx = 0;
+        let userScore = 0;
+
+        function switchTab(tab) {
+            const qSec = document.getElementById('quran-section');
+            const hSec = document.getElementById('history-section');
+            const quizSec = document.getElementById('quiz-section');
+            
+            const btnQ = document.getElementById('btn-quran');
+            const btnH = document.getElementById('btn-history');
+            const btnQuiz = document.getElementById('btn-quiz');
+
+            // إخفاء الجميع أولاً
+            qSec.classList.add('hidden');
+            hSec.classList.add('hidden');
+            quizSec.classList.add('hidden');
+
+            btnQ.className = "px-6 py-2 rounded-full bg-emerald-800 text-emerald-100 hover:bg-emerald-700 font-bold transition-all";
+            btnH.className = "px-6 py-2 rounded-full bg-emerald-800 text-emerald-100 hover:bg-emerald-700 font-bold transition-all";
+            btnQuiz.className = "px-6 py-2 rounded-full bg-emerald-800 text-emerald-100 hover:bg-emerald-700 font-bold transition-all";
+
+            if(tab === 'quran') {
+                qSec.classList.remove('hidden');
+                btnQ.className = "px-6 py-2 rounded-full bg-gold-500 text-emerald-950 font-bold shadow transition-all scale-105";
+            } else if (tab === 'history') {
+                hSec.classList.remove('hidden');
+                btnH.className = "px-6 py-2 rounded-full bg-gold-500 text-emerald-950 font-bold shadow transition-all scale-105";
+                if(!historyLoaded) loadHistory();
+            } else if (tab === 'quiz') {
+                quizSec.classList.remove('hidden');
+                btnQuiz.className = "px-6 py-2 rounded-full bg-gold-500 text-emerald-950 font-bold shadow transition-all scale-105";
+            }
+        }
+
+        // بدء اللعبة واختيار القسم
+        function startQuiz(type) {
+            currentQuestionsList = [...quizDatabase[type]];
+            // خلط الأسئلة عشوائياً لزيادة التنافسية والإثارة
+            currentQuestionsList.sort(() => Math.random() - 0.5);
+            
+            currentQuestionIdx = 0;
+            userScore = 0;
+
+            document.getElementById('quiz-type-title').innerText = type === 'quran' ? "قسم القرآن الكريم" : "قسم التاريخ الإسلامي";
+            document.getElementById('quiz-game-box').classList.remove('hidden');
+            document.getElementById('quiz-result-box').classList.add('hidden');
+            
+            updateScoreDisplay();
+            showQuizQuestion();
+        }
+
+        function showQuizQuestion() {
+            const questionData = currentQuestionsList[currentQuestionIdx];
+            const total = currentQuestionsList.length;
+            
+            // تحديث العدادات وشريط التقدم
+            document.getElementById('quiz-progress').innerText = `سؤال ${currentQuestionIdx + 1} / ${total}`;
+            const percentage = ((currentQuestionIdx + 1) / total) * 100;
+            document.getElementById('quiz-progress-bar').style.width = `${percentage}%`;
+
+            document.getElementById('quiz-question-text').innerText = questionData.q;
+            
+            const optionsWrapper = document.getElementById('quiz-options-wrapper');
+            optionsWrapper.innerHTML = '';
+
+            questionData.o.forEach((option, idx) => {
+                const btn = document.createElement('button');
+                btn.className = "w-full text-right px-4 py-3 border border-emerald-100 rounded-xl text-sm font-medium transition-all duration-200 hover:bg-emerald-50 bg-ivory focus:outline-none quiz-opt-btn";
+                btn.innerText = option;
+                btn.onclick = () => checkQuizAnswer(idx, questionData.a, btn);
+                optionsWrapper.appendChild(btn);
+            });
+
+            // تعطيل زر التالي لحين الإجابة
+            const nextBtn = document.getElementById('quiz-next-btn');
+            nextBtn.className = "px-5 py-2 text-sm bg-slate-200 text-slate-400 font-bold rounded-xl pointer-events-none transition-all";
+        }
+
+        function checkQuizAnswer(selectedIdx, correctIdx, clickedBtn) {
+            const allButtons = document.querySelectorAll('.quiz-opt-btn');
+            
+            // قفل الضغط على باقي الخيارات
+            allButtons.forEach(btn => btn.style.pointerEvents = 'none');
+
+            if (selectedIdx === correctIdx) {
+                clickedBtn.className = "w-full text-right px-4 py-3 border bg-green-50 border-green-500 text-green-800 rounded-xl text-sm font-bold shadow-inner";
+                userScore++;
+                updateScoreDisplay();
+            } else {
+                clickedBtn.className = "w-full text-right px-4 py-3 border bg-red-50 border-red-500 text-red-800 rounded-xl text-sm font-bold shadow-inner";
+                // إظهار الإجابة الصحيحة باللون الأخضر للمستخدم ليتعلم
+                allButtons[correctIdx].className = "w-full text-right px-4 py-3 border bg-green-50 border-green-500 text-green-800 rounded-xl text-sm font-bold";
+            }
+
+            // تفعيل زر الانتقال للسؤال التالي تلقائياً
+            const nextBtn = document.getElementById('quiz-next-btn');
+            nextBtn.className = "px-5 py-2 text-sm bg-gold-500 text-emerald-950 font-bold rounded-xl hover:bg-gold-600 shadow transition-all cursor-pointer";
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('quiz-score').innerText = userScore;
+        }
+
+        function nextQuestion() {
+            currentQuestionIdx++;
+            if (currentQuestionIdx < currentQuestionsList.length) {
+                showQuizQuestion();
+            } else {
+                // انتهاء الأسئلة وعرض شاشة النتيجة النهائية
+                document.getElementById('quiz-game-box').add('hidden');
+                document.getElementById('quiz-game-box').classList.add('hidden');
+                
+                const resultBox = document.getElementById('quiz-result-box');
+                resultBox.classList.remove('hidden');
+                document.getElementById('final-score-text').innerText = `${userScore} / ${currentQuestionsList.length}`;
+            }
+        }
+
+        function resetQuiz() {
+            document.getElementById('quiz-result-box').classList.add('hidden');
+            document.getElementById('quiz-game-box').classList.add('hidden');
+        }
+
+        // بقية الدوال القديمة للموقع دون أي تعديل للحفاظ على استقرار الفيربيز والمصحف
+        let allSurahs = [];
+        async function fetchSurahs() {
+            try {
+                const res = await fetch('https://api.alquran.cloud/v1/surah');
+                const data = await res.json();
+                allSurahs = data.data;
+                renderSurahs();
+            } catch (error) {
+                document.getElementById('surahs-container').innerHTML = `<div class="text-red-600 text-center col-span-full">عذراً، حدث خطأ أثناء تحميل السور.</div>`;
+            }
+        }
+
+        function renderSurahs() {
+            const container = document.getElementById('surahs-container');
+            container.innerHTML = '';
+            allSurahs.forEach(surah => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-xl border border-emerald-100 shadow-sm hover:shadow-xl hover:border-gold-500 cursor-pointer transition-all duration-300 flex justify-between items-center group hover:scale-105 active:scale-95";
+                card.onclick = () => openSurah(surah.number, surah.name, surah.revelationType, surah.numberOfAyahs);
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <span class="text-xs font-bold text-gold-600 bg-gold-50 px-2 py-1 rounded transition-colors group-hover:bg-gold-100">${surah.number}</span>
+                        <h3 class="text-lg font-bold text-emerald-900 group-hover:text-emerald-700 transition-colors mt-2 Amiri">${surah.name}</h3>
+                        <p class="text-xs text-slate-400 mt-1">${surah.revelationType === 'Meccan' ? 'مكية' : 'مدنية'} • ${surah.numberOfAyahs} آية</p>
+                    </div>
+                    <div class="text-2xl text-emerald-200 group-hover:text-gold-500 transition-colors transform group-hover:rotate-12">📖</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        async function openSurah(id, name, type, ayahs) {
+            const modal = document.getElementById('surah-modal');
+            const content = document.getElementById('modal-content');
+            const modalWindow = modal.querySelector('div');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.add('opacity-100');
+                modalWindow.classList.remove('scale-90');
+                modalWindow.classList.add('scale-100');
+            }, 10);
+            
+            document.getElementById('modal-title').innerText = name;
+            document.getElementById('modal-info').innerText = `${type === 'Meccan' ? 'مكية' : 'مدنية'} | ${ayahs} آية`;
+            content.innerHTML = '<div class="animate-pulse">جاري تحميل الآيات...</div>';
+            
+            const audio = document.getElementById('audio-player');
+            audio.src = `https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${id}.mp3`;
+            audio.load();
+
+            try {
+                const res = await fetch(`https://api.alquran.cloud/v1/surah/${id}`);
+                const data = await res.json();
+                let surahText = '';
+                
+                data.data.ayahs.forEach((ayah, index) => {
+                    let text = ayah.text;
+                    if(id !== 1 && id !== 9 && index === 0) {
+                        text = text.replace("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ ", "");
+                    }
+                    surahText += `<span class="hover:text-emerald-700 transition-colors">${text}</span> <span class="text-gold-600 font-sans text-lg mx-1 font-bold">﴿${ayah.numberInSurah}﴾</span> `;
+                });
+
+                content.innerHTML = id !== 9 && id !== 1 ? `<div class="text-gold-600 mb-4 block text-3xl">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</div>` + surahText : surahText;
+            } catch (error) {
+                content.innerHTML = '<div class="text-red-600">خطأ في تحميل نص السورة.</div>';
+            }
+        }
+
+        function closeSurahModal() {
+            const modal = document.getElementById('surah-modal');
+            const modalWindow = modal.querySelector('div');
+            const audio = document.getElementById('audio-player');
+            
+            audio.pause();
+            modal.classList.remove('opacity-100');
+            modalWindow.classList.remove('scale-100');
+            modalWindow.classList.add('scale-90');
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        const historyData = [
+            {
+                title: "عصر الخلفاء الراشدين",
+                capital: "المدينة المنورة (ثم الكوفة مؤخراً)",
+                leaders: "أبو بكر الصديق، عمر بن الخطاب، عثمان بن عفان، علي بن أبي طالب رضي عنهم",
+                monuments: "تأسيس دواوين الدولة، جمع القرآن الكريم في مصحف واحد، بناء مدينة الكوفة والفسطاط",
+                desc: "الفترة الممتدة من بعد وفاة النبي ﷺ وحكّم فيها الخلفاء الأربعة، وتميزت بالشورى والعدل المطلق والفتوحات التأسيسية الباهرة لانتشار الإسلام.",
+                muslims: "تجمع المصادر كـ (تاريخ الطبري) و(البداية والنهاية) لابن كثير على أنها الحقبة النموذجية لتطبيق قيم الإسلام السياسية والاجتماعية.",
+                orientalists: "ينظر مستشرقون مثل (ويلهوزن) و(مير) إليها كفترة انتقال حرجة من القبلية إلى الدولة. يركزون بشكل مكثف على الصراعات السياسية الفتنة الكبرى."
+            },
+            {
+                title: "الدولة الأموية",
+                capital: "دمشق (سوريا)",
+                leaders: "معاوية بن أبي سفيان، عبد الملك بن مروان، عمر بن عبد العزيز، هشام بن عبد الملك",
+                monuments: "الجامع الأموي بدمشق, قبة الصخرة في القدس، تعريب الدواوين وسك الدينار الذهبي الإسلامي",
+                desc: "أولى السلالات الحاكمة في الإسلام (41 هـ - 132 هـ)، وشهدت أكبر حركة توسع جغرافي في تاريخ الإسلام وصياغة الهوية السياسية للدولة.",
+                muslims: "تراها المصادر حقبة الفتوحات العظمى (فتح الأندلس وبلاد ما وراء النهر)، وتأسيس البنية الإمبراطورية كتعريب الدواوين وسك العملة.",
+                orientalists: "يركز المستشرقون (مثل برونو وبلايتس) على إبراز الأمويين كـ 'ملوك علمانيين' أسسوا دولة عربية قومية أكثر منها إسلامية."
+            },
+            {
+                title: "الدولة العباسية",
+                capital: "بغداد (العراق) / سامراء لفترة وجيزة",
+                leaders: "أبو جعفر المنصور، هارون الرشيد، المأمون، المعتصم بالله",
+                monuments: "بيت الحكمة ببغداد، المدرسة المستنصرية، جامع ملوية سامراء",
+                desc: "العصر الذهبي للعلوم والثقافة الإسلامية (132 هـ - 656 هـ)، حيث أصبحت عاصمتها بغداد مركزاً علمياً وحضارياً تقصده شتى شعوب الأرض.",
+                muslims: "يحتفي المؤرخون المسلمون بالازدهار العلمي الفقهي والكوني (بيت الحكمة)، وظهور المذاهب الأربعة، والتصدي لحركات الزندقة.",
+                orientalists: "تثير هذه الفترة شغف المستشرقين بشكل واسع (مثل هاملتون جيب). يركزون على حركة الترجمة الضخمة للفلسفة اليونانية."
+            },
+            {
+                title: "الدولة الفاطمية",
+                capital: "المهدية (تونس) ثم القاهرة (مصر)",
+                leaders: "عبيد الله المهدي، المعز لدين الله، العزيز بالله، الحاكم بأمر الله",
+                monuments: "تأسيس مدينة القاهرة، بناء الجامع الأزهر الشريف، دار الحكمة الفاطمية",
+                desc: "دولة قامت في المغرب ثم تمددت إلى مصر والشام (297 هـ - 567 هـ). تميزت بالعمارة الإسلامية الفريدة والاحتفالات الشعبية العريقة.",
+                muslims: "يركز المقريزي في خططه على البذخ العمراني والازدهار الاقتصادي بمصر، مع الإشارة للتباين المذهبي بين الحكام والشعب.",
+                orientalists: "يهتم المستشرق (برنارد لويس) بدراسة التنظيم السري للدعوة الفاطمية الفلسفية، ويعتبر القاهرة منافساً حقيقياً لبغداد العباسية."
+            },
+            {
+                title: "الدولة الأيوبية",
+                capital: "القاهرة (مصر) / دمشق (سوريا)",
+                leaders: "صلاح الدين الأيوبي، الملك العادل, الملك الكامل، الصالح نجم الدين أيوب",
+                monuments: "قلعة صلاح الدين بالقاهرة، الأسوار الأيوبية، المدرسة الكاملية",
+                desc: "أسسها السلطان الناصر صلاح الدين (569 هـ - 648 هـ)، وقادت العالم الإسلامي في مواجهة الحملات الصليبية وحررت القدس الشريف.",
+                muslims: "يمجد ابن شداد وابن الأثير في مؤلفاتهم جهاد صلاح الدين، وحنكته العسكرية في معركة حطين، وإعادة الخطبة للعباسيين في مصر.",
+                orientalists: "يرسم المستشرقون (مثل رونسيمان) صورة نبيلة جداً لصلاح الدين، مشيدين بتسامحه الإنساني النادر مع أسرى الصليبيين بعد فتح القدس."
+            },
+            {
+                title: "عصر المماليك",
+                capital: "القاهرة (مصر)",
+                leaders: "سيف الدين قطز، الظاهر بيبرس، المنصور قلاوون، الأشرف خليل، الناصر محمد",
+                monuments: "مسجد ومدرسة السلطان حسن, قلعة قايتباي، البيمارستان المنصوري",
+                desc: "حكموا مصر والشام (648 هـ - 923 هـ)، وحموا العالم الإسلامي من الفناء بصد التتار في (عين جالوت) وتصفية الوجود الصليبي تماماً.",
+                muslims: "يعتبر ابن خلدون والقلقشندي دولة المماليك معجزة تاريخية في التنظيم العسكري، ويصفون القاهرة حينها بأنها 'محط رحال العلم'.",
+                orientalists: "يدرس المستشرق (دافيد أيلون) البنية الفريدة لنظام المماليك العسكري وتأثيرهم على التجارة العالمية بين الشرق والغرب."
+            },
+            {
+                title: "الدولة العثمانية",
+                capital: "بورصة ثم أدرنة ثم إسطنبول (القسطنطينية)",
+                leaders: "عثمان الأول، محمد الفاتح، سليم الأول، سليمان القانوني، عبد الحميد الثاني",
+                monuments: "مسجد آيا صوفيا (بعد تحويله)، جامع السلطان أحمد، قصر توبكابي",
+                desc: "إمبراطورية إسلامية واسعة (699 هـ - 1342 هـ)، نقلت الخلافة إلى الأناضول، وفتحت القسطنطينية، وبسطت نفوذها على ثلاث قارات.",
+                muslims: "توثق السجلات العثمانية ومؤرخو الشام حركة الجهاد نحو أوروبا (الفتوحات البلقانية) وحماية الحرمين الشريفين لقرون طويلة.",
+                orientalists: "يركز مستشرقون مثل (برنارد لويس) و(هاليل إينالجيك) على النظم الإدارية المعقدة (الديوان) والتنوع الديني الفريد داخل الدولة."
+            }
+        ];
+
+        function loadHistory() {
+            const menu = document.getElementById('eras-menu');
+            menu.innerHTML = '';
+
+            historyData.forEach((era, index) => {
+                const btn = document.createElement('button');
+                btn.id = `era-btn-${index}`;
+                btn.className = `w-full text-right px-4 py-3 rounded-xl font-medium transition-all duration-300 text-sm ${index === 0 ? 'bg-emerald-900 text-white font-bold shadow-lg scale-105' : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'}`;
+                btn.innerText = era.title;
+                btn.onclick = () => selectEra(index);
+                menu.appendChild(btn);
+            });
+
+            selectEra(0);
+            historyLoaded = true;
+        }
+
+        function selectEra(index) {
+            window.currentEraIndex = index;
+            historyData.forEach((_, i) => {
+                const btn = document.getElementById(`era-btn-${i}`);
+                if(btn) {
+                    btn.className = `w-full text-right px-4 py-3 rounded-xl font-medium transition-all duration-300 text-sm ${i === index ? 'bg-emerald-900 text-white font-bold shadow-lg scale-105' : 'bg-white text-slate-700 hover:bg-emerald-50 hover:text-emerald-900'}`;
+                }
+            });
+
+            const data = historyData[index];
+            document.getElementById('era-title').innerText = data.title;
+            document.getElementById('era-desc').innerText = data.desc;
+            document.getElementById('era-capital').innerText = data.capital;
+            document.getElementById('era-leaders').innerText = data.leaders;
+            document.getElementById('era-monuments').innerText = data.monuments;
+            document.getElementById('era-muslims').innerText = data.muslims;
+            document.getElementById('era-orientalists').innerText = data.orientalists;
+
+            window.renderQuestions();
+            window.renderDevQuestions();
+        }
+
+        window.renderQuestions = function() {
+            const container = document.getElementById('questions-display-container');
+            if(!container) return;
+            container.innerHTML = '';
+
+            const currentEraQuestions = window.allFirebaseQuestions.filter(item => 
+                item.eraIndex === window.currentEraIndex && item.userId === window.visitorSecretId
+            );
+
+            if(currentEraQuestions.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-4">ليست لديك استفسارات خاصة حول هذا العصر حالياً.</p>`;
+                return;
+            }
+
+            currentEraQuestions.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "bg-emerald-50/40 border border-emerald-100 p-4 rounded-xl text-xs";
+                div.innerHTML = `
+                    <p class="font-bold text-emerald-900 mb-1">❓ سؤالي: ${item.question}</p>
+                    <p class="text-slate-600 leading-relaxed">${item.reply ? `💡 رد المطور: <span class="text-emerald-800 font-medium">${item.reply}</span>` : '⏳ في انتظار رد المطور أحمد وائل...'}</p>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        window.renderDevQuestions = function() {
+            const container = document.getElementById('dev-questions-list');
+            if(!container) return;
+            container.innerHTML = '';
+
+            const currentEraQuestions = window.allFirebaseQuestions.filter(item => item.eraIndex === window.currentEraIndex);
+
+            if(currentEraQuestions.length === 0) {
+                container.innerHTML = `<p class="text-xs text-slate-400 italic text-center py-2">لا توجد أسئلة مرسلة من المستخدمين لهذا العصر بعد.</p>`;
+                return;
+            }
+
+            currentEraQuestions.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "bg-emerald-900 p-3 rounded-xl border border-emerald-800 text-xs";
+                div.innerHTML = `
+                    <p class="text-gold-500 font-medium mb-2">👤 سؤال زائر سري: ${item.question}</p>
+                    <div class="flex gap-2">
+                        <input id="reply-input-${item.id}" type="text" placeholder="${item.reply ? item.reply : 'اكتب ردك البرمجي أو التاريخي هنا...'}" class="flex-1 bg-emerald-950 border border-emerald-800 px-3 py-1.5 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-gold-500">
+                        <button onclick="submitReply('${item.id}')" class="bg-gold-500 hover:bg-gold-600 text-emerald-950 font-bold px-3 py-1.5 rounded-lg transition-colors">تحديث الرد</button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleDevPanel() {
+    const panel = document.getElementById('dev-panel');
+    
+    // إذا كانت اللوحة مغلقة وتريد فتحها، سنطلب كلمة مرور
+    if (panel.classList.contains('hidden')) {
+        const password = prompt("برجاء إدخال كلمة مرور المطور للدخول:");
+        
+        // يمكنك تغيير 'AhmedWael2026' لأي كلمة سر تفضلها
+        if (password === '3092004') { 
+            panel.classList.remove('hidden');
+            if(!historyLoaded) loadHistory();
+        } else {
+            alert("عذراً، كلمة المرور خاطئة. هذه اللوحة مخصصة لمطور الموقع فقط!");
+        }
+    } else {
+        // إذا كانت مفتوحة بالفعل واضغطت على الزر، سيتم إغلاقها مباشرة
+        panel.classList.add('hidden');
+    }
+}
+    </script>
+</body>
+</html>
